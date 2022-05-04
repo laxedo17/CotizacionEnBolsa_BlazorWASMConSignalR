@@ -1,0 +1,83 @@
+@page "/fetchdata"
+@using CotizacionEnBolsa_BlazorWASMConSignalR.Client.Componentes
+@using CotizacionEnBolsa_BlazorWASMConSignalR.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@inject HttpClient Http
+@inject NavigationManager navigationManager
+
+@implements IDisposable
+
+<h1>Cotizacions en bolsa</h1>
+
+@if (cotizacions == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Simbolo</th>
+                <th style="text-align: right;">Precio</th>
+                <th style="text-align: center;">Cambio</th>
+                <th style="text-align: right;">Volumen</th>
+                <th>Hora</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cotizacion in cotizacions)
+            {
+                <CotizacionBolsaMostrar Cotizacion="cotizacion"></CotizacionBolsaMostrar>
+            }
+        </tbody>
+    </table>
+}
+
+<div class="content px-4" style="background-color: gainsboro;">
+    Info=@textoInfo
+</div>
+
+@code {
+    private List<CotizacionBolsa> cotizacions = new List<CotizacionBolsa>();
+    private string textoInfo;
+    private HubConnection hubConn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.hubConn = new HubConnectionBuilder()
+            .WithUrl(navigationManager.ToAbsoluteUri("/hubs/cotizacions"))
+            .Build();
+
+        this.hubConn.On<string>("HubMensaxeCotizacion", (msx) =>
+        {
+            this.textoInfo = $"{msx}";
+            StateHasChanged();
+        });
+
+        //cu de cotizacion
+        this.hubConn.On<CotizacionBolsa>("EnviarInfoCotizacion", (co) =>
+        {
+            int i = this.cotizacions.FindIndex(c => c.Simbolo == co.Simbolo);
+
+            if (i < 0)
+            {
+                this.cotizacions.Add(co);
+                StateHasChanged();
+            }
+            else
+            {
+                this.cotizacions[i].UpdateDatosAccions(co);
+
+                StateHasChanged();
+            }
+        });
+
+        await this.hubConn.StartAsync();
+    }
+
+    public void Dispose()
+    {
+        this.hubConn?.StopAsync();
+    }
+}

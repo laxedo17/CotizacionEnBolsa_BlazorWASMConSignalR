@@ -1,0 +1,24 @@
+﻿@using CotizacionEnBolsa_BlazorWASMConSignalR.Shared
+
+<tr>
+    <td>@Cotizacion.Simbolo</td>
+    <td style="text-align: right; color: white; background-color: @(Cotizacion.IncrementoPrecio ? "green" : "red" );">@Cotizacion.Precio.ToString("C2")</td>
+    <td style="text-align: center; color: @(Cotizacion.IncrementoPrecio ? "green" : "red" );">@Cotizacion.Porcentaxe.ToString("F1")%</td>
+    <td style="text-align: right;">@Cotizacion.Volumen</td>
+    <td>@Cotizacion.Hora.ToString("HH:mm:ss.fff")</td>
+</tr>
+
+@code {
+    [Parameter]
+    public CotizacionBolsa Cotizacion { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        Cotizacion.CotizacionActualizada += (_,__) =>
+        {
+            StateHasChanged();
+        };
+
+        return base.OnInitializedAsync();
+    }
+}
